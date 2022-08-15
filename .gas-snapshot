@@ -1,1 +1,2 @@
-GreeterTest:testSetGm() (gas: 107402)
+BytesAuxTest:testWriteAndReadNoOffset(uint128) (runs: 256, μ: 27074, ~: 28862)
+BytesAuxTest:testWriteAndReadWithOffset(uint128,uint64) (runs: 256, μ: 34014, ~: 34014)
