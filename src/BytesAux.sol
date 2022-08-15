@@ -18,51 +18,83 @@ contract BytesAux{
   
   constructor() {}
   
-  
+  function _uint128ToBytes24(uint128 value_) internal pure returns (bytes24 result) {
+    assembly {
+      // `bytes24` is left aligned.
+      // We shift `value` left by 128, which left aligns it,
+      // and also cleans out the upper 128 bits if they aren't clean.
+      result := shl(128, value_)
+    }
+  }
+
+  function _uint128And64ToBytes24(uint128 firstValue_, uint64 secondValue_)
+    internal 
+    pure
+    returns
+    (bytes24 result) 
+  {
+    assembly {
+      // `bytes24` is left aligned.
+      result := or(
+        // We shift `firstValue_` left by 128, which left aligns it,
+        // and also cleans out the upper 128 bits if they aren't clean.
+        shl(128, firstValue_), 
+        // We shift `secondValue_` left by 192 to clean up any upper bits,
+        // and shift it back by 128 into position in the `bytes24`.
+        shr(128, shl(192, secondValue_))
+      )
+    }
+  }
+
+  function _bytes24ToUint128And64(bytes24 value_) 
+    internal
+    pure
+    returns
+    (uint128 firstValue, uint64 secondValue) 
+  {
+    assembly {
+      firstValue := shr(128, value_)
+      secondValue := shr(192, shl(128, value_))
+    }
+  }
+
+  function _bytes24OffsetValueToUint128(bytes24 value, uint8 offset) internal pure returns (uint128 result) {
+    assembly {
+      result := shr(add(128, offset), shl(offset, value))
+    }
+  }
+
+  function _bytes24OffsetValueToUint64(bytes24 value, uint8 offset) internal pure returns (uint64 result) {
+    assembly {
+      result := shr(add(192, offset), shl(offset, value))
+    }
+  }
 
   // Sets the aux bytes to a uint value
   function setAux(uint128 value_) external returns (bool status){
-    // Set the aux to a bytes24 version of the uint converted to bytes
-    demo.aux = bytes24(abi.encodePacked(value_));
+    demo.aux = _uint128ToBytes24(value_);
     status = true;
   }
 
   // Sets the aux bytes to two uint values of different sizes
   function setAuxMultiple(uint128 firstValue_, uint64 secondValue_) external returns (bool status){
-    // Convert the uints to bytes
-    bytes memory firstValueBytes = abi.encodePacked(firstValue_);
-    bytes memory secondValueBytes = abi.encodePacked(secondValue_);
-    // Concatenate them using the concat function (it's about 100-150 gas more than BytesLib.concat)
-    bytes memory concatenatedBytes = bytes.concat(firstValueBytes,secondValueBytes);
-    // Set the aux to a bytes24 version of this object
-    demo.aux = bytes24(concatenatedBytes);
+    demo.aux = _uint128And64ToBytes24(firstValue_, secondValue_);
     status = true;
   }
 
   // Gets the uint value based on the aux bytes
-  function getAux(uint8 offset) external view returns (uint128 value){
-    // Copy the bytes from state to memory
-    bytes memory copy = abi.encodePacked(demo.aux);
-    // Use the bytesLib function to recover the value (with 0 offset)
-    value = BytesLib.toUint128(copy,offset);
+  function getAuxFirstValueOnly() external view returns (uint128 firstValue){
+    (firstValue, ) = _bytes24ToUint128And64(demo.aux);
   }
 
   /// @dev Gets the uint value based on the aux bytes
   function getAuxMultiple() external view returns (uint128 firstValue, uint64 secondValue){
-    // Copy the bytes from state to memory
-    bytes memory copy = abi.encodePacked(demo.aux);
-    // Use the bytesLib function to recover the value (with 0 offset)
-    firstValue = BytesLib.toUint128(copy,0);
-    // Use the bytesLib function to recover the value (with 16 byte offset)
-    secondValue = BytesLib.toUint64(copy,16); // 16 Bytes offset
+    return _bytes24ToUint128And64(demo.aux);
   }
 
   // Gets the second uint value based on the aux bytes and an offset
-  function getAuxMultipleSecondValueOnly(uint8 offset) external view returns (uint64 value){
-    // Copy the bytes from state to memory
-    bytes memory copy = abi.encodePacked(demo.aux);
-    // Use the bytesLib function to recover the value (with 0 offset)
-    value = BytesLib.toUint64(copy,offset);
+  function getAuxSecondValueOnly() external view returns (uint64 secondValue){
+    (, secondValue) = _bytes24ToUint128And64(demo.aux);
   }
 
   

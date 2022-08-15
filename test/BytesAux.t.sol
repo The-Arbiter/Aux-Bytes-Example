@@ -21,7 +21,7 @@ contract BytesAuxTest is Test {
             revert("Setter did not return true");
         }
         // Get the AUX
-        uint128 storedValue = bytesAux.getAux(0);
+        uint128 storedValue = bytesAux.getAuxFirstValueOnly();
         if(storedValue!=value_){
             revert("Stored value is not equal to the initial value!");
         }
@@ -53,7 +53,7 @@ contract BytesAuxTest is Test {
         }
 
         // Try and get the second value *only* using our custom function
-        uint64 storedSecondValueAgain = bytesAux.getAuxMultipleSecondValueOnly(16); 
+        uint64 storedSecondValueAgain = bytesAux.getAuxSecondValueOnly(); 
         if(storedSecondValue!=storedSecondValueAgain){
             revert("Stored value is not equal to the second stored value!");
         }
